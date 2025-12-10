@@ -27,3 +27,18 @@ It features a smart sorting algorithm that automatically categorizes URLs by the
 #### **🚀 How to Use**
 Simply open the `index.html` file in any modern web browser. No installation, build process, or server setup is required.
 
+
+## ☕ Buy me a coffee
+
+觉得这个项目对你有帮助？可以请作者喝杯咖啡：
+
+<details>
+<summary><strong>点击查看 支付宝 赞赏码 (Click to expand)</strong></summary>
+
+<br>
+<div align="center">
+    <img src="./images/alipay.png" width="200px" alt="Alipay">
+    
+    <sub>(感谢您的支持！)</sub>
+</div>
+</details>
