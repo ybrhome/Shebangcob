@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shebangcob &reg; - Personal Web Portal </title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&display=swap" rel="stylesheet">
+    
+    <style>
+        /* =========================================
+           全局与基础样式 
+           ========================================= */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            background-color: #f8f9fa; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            
+            padding-bottom: 80px; 
+        }
+
+        .navbar-brand { font-family: 'Playfair Display', serif; font-weight: bold; font-size: 1.5rem; }
+
+        /* 左侧垂直字母导航 */
+        .alphabet-nav {
+            position: fixed; left: 0; top: 50%; transform: translateY(-50%);
+            background-color: #ffffff; padding: 10px 0; width: 45px;
+            border-radius: 0 8px 8px 0; box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; align-items: center;
+            z-index: 1000; max-height: 90vh; overflow-y: auto; scrollbar-width: none;
+        }
+        .alphabet-nav::-webkit-scrollbar { display: none; }
+
+        .alphabet-nav a {
+            display: block; text-decoration: none; color: #495057;
+            font-weight: bold; font-size: 14px; padding: 2px 0; width: 100%;
+            text-align: center; transition: all 0.2s;
+        }
+        .alphabet-nav a:hover { background-color: #0d6efd; color: white; }
+
+        /* 链接卡片区域 */
+        #displaylinkdiv { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+        div.flex-container {
+            display: flex; flex-wrap: wrap; min-height: 72px; 
+            justify-content: flex-start; gap: 15px; margin-bottom: 20px;
+        }
+        div.flex-container > div { font: 1.25em sans-serif; }
+
+        /* 胶囊按钮 */
+        .edit-open-button input[type="button"] {
+            background-color: #ffffff; border: 1px solid #dee2e6; color: #212529;
+            padding: 10px 20px; font-size: 1rem; border-radius: 50px;
+            transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            cursor: pointer; min-width: 120px; text-align: center;
+            position: relative;
+        }
+        .edit-open-button input[type="button"]:hover {
+            background-color: #e9ecef; transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-color: #0d6efd;
+        }
+        
+        /* 选中状态样式 */
+        .edit-open-button input[type="button"].selected {
+            background-color: #cfe2ff; border-color: #0d6efd; color: #084298;
+            box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+        }
+
+        /* 搜索框与建议 */
+        .search-container { position: relative; width: 100%; max-width: 400px; }
+        .search-suggestions-class {
+            position: absolute; top: 100%; left: 0; z-index: 1000; left: 20px;  /* 左侧缩进 20px (对应圆角) */
+            right: 20px; /* 右侧缩进 20px */
+            width: auto; /* 让左右边距决定宽度 */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); background: white;
+            border-radius: 8px 8px 8px 8px; max-height: 300px; overflow-y: auto;
+            margin-top: 5px;
+        }
+        #suggestions .list-group-item { cursor: pointer; border-left: none; border-right: none; }
+        #suggestions .list-group-item:hover { background-color: #f8f9fa; }
+
+        .modal-dialog { transform: translateY(25%) !important; }
+        .dropdown-menu { border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: none; }
+        .dropdown-item { padding: 10px 20px; cursor: pointer; }
+        .dropdown-item:active { background-color: #0d6efd; }
+
+        /* 底部批量操作栏 */
+        #batchActionBar {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: white; padding: 10px 20px; border-radius: 50px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000;
+            display: none; align-items: center; gap: 15px; border: 1px solid #dee2e6;
+        }
+        .slide-up { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translate(-50%, 100px); } to { transform: translate(-50%, 0); } }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand ps-3" href="#">Shebangcob</a>
+            
+            <div class="d-flex ms-4 me-auto" style="flex-grow: 1;">
+                <div class="search-container">
+                    <input type="text" id="searchlink" class="form-control" placeholder="Search links..." style="border-radius: 20px;">
+                    <div class="search-suggestions-class">
+                        <ul id="suggestions" class="list-group list-group-flush"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center">
+                <button class="btn btn-primary btn-sm rounded-pill px-3 me-3" data-bs-toggle="modal" data-bs-target="#addHyperlinkModal">
+                    + Add Link
+                </button>
+
+                <div class="dropdown me-3">
+                    <button class="btn btn-outline-light btn-sm rounded-pill px-3 dropdown-toggle" type="button" id="settingsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        Settings
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="settingsDropdown">
+                        <li><a class="dropdown-item" onclick="toggleSelectMode()">Select</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        
+                        <li><a class="dropdown-item" onclick="exportData()">Backup Data</a></li>
+                        <input type="file" id="importFile" style="display: none;" accept=".json">
+                        <li><a class="dropdown-item" onclick="document.getElementById('importFile').click()">Import Data</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="mailto:ybrhome@icloud.com">Contact Me</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="alphabet-nav">
+        <a href="#A">A</a><a href="#B">B</a><a href="#C">C</a><a href="#D">D</a><a href="#E">E</a>
+        <a href="#F">F</a><a href="#G">G</a><a href="#H">H</a><a href="#I">I</a><a href="#J">J</a>
+        <a href="#K">K</a><a href="#L">L</a><a href="#M">M</a><a href="#N">N</a><a href="#O">O</a>
+        <a href="#P">P</a><a href="#Q">Q</a><a href="#R">R</a><a href="#S">S</a><a href="#T">T</a>
+        <a href="#U">U</a><a href="#V">V</a><a href="#W">W</a><a href="#X">X</a><a href="#Y">Y</a>
+        <a href="#Z">Z</a><a href="##">#</a>
+    </div>
+
+    <div id="displaylinkdiv"></div>
+
+    <div id="batchActionBar">
+        <span class="fw-bold text-secondary" id="selectedCount">0 Selected</span>
+        <div class="vr"></div>
+        <button class="btn btn-danger btn-sm rounded-pill" onclick="deleteSelected()">
+            Delete Selected
+        </button>
+        <button class="btn btn-outline-secondary btn-sm rounded-pill" onclick="toggleSelectMode()">
+            Done
+        </button>
+    </div>
+
+    <div class="modal fade" id="addHyperlinkModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">New Hyperlink</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="addHyperlinkForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">URL Address</label>
+                            <input type="text" class="form-control" id="hyperlink_address" required placeholder="https://...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Description</label>
+                            <input type="text" class="form-control" id="hyperlink_description" required placeholder="Name of site">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="edit-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Hyperlink</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="closemodal()"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Address</label>
+                        <input type="text" class="form-control" id="edit-hyperlinkAddress-input">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Description</label>
+                        <input type="text" class="form-control" id="edit-hyperlinkDescription-input">
+                    </div>
+                    <input type="hidden" id="edit-pk-input">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger me-auto" id="delete-save">Delete</button>
+                    <button type="button" class="btn btn-secondary" onclick="closemodal()">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="edit-save">Update</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // ==========================================
+        // 核心 JS 逻辑
+        // ==========================================
+
+        let parsedData = JSON.parse(localStorage.getItem('myHyperlinks')) || [
+            { pk: 1, fields: { hyperlinkAddress: "https://www.google.com", hyperlinkDescription: "Google" } },
+            { pk: 2, fields: { hyperlinkAddress: "https://github.com", hyperlinkDescription: "Github" } }
+        ];
+
+        let isSelectMode = false;
+        let selectedIds = new Set();
+
+        function getMainDomain(url) {
+            try {
+                const hostname = new URL(url).hostname;
+                const parts = hostname.split('.').reverse();
+                if (parts.length > 2) {
+                    let sliceIndex = -2;
+                    const secondLevelTLDs = ['co', 'com', 'gov', 'org', 'net', 'edu', 'ac'];
+                    if (secondLevelTLDs.includes(parts[1])) sliceIndex = -3;
+                    return parts.slice(sliceIndex).reverse().join('.');
+                }
+                return parts.reverse().join('.');
+            } catch (error) { return "unknown"; }
+        }
+
+        function getKey(url) {
+            let myString = getMainDomain(url);
+            if (!myString) return "#";
+            let cleanString = myString.replace(/^www\./, '');
+            let parts = cleanString.split("."); 
+            let domainEntity = parts[0]; 
+            if (!domainEntity) return "#";
+            let firstChar = domainEntity[0];
+            if (!/^[a-zA-Z]$/.test(firstChar)) return '#';
+            return firstChar;
+        }
+
+        function customLocaleCompare(a, b) {
+            const aIsPound = a === '#';
+            const bIsPound = b === '#';
+            if (aIsPound && bIsPound) return 0;
+            if (aIsPound) return 1;
+            if (bIsPound) return -1;
+            return a.localeCompare(b);
+        }
+
+        function renderLinks() {
+            const sortedData = parsedData.sort((a, b) => {
+                let aKey = getKey(a.fields.hyperlinkAddress);
+                let bKey = getKey(b.fields.hyperlinkAddress);
+                return customLocaleCompare(aKey.toUpperCase(), bKey.toUpperCase());
+            });
+
+            const groupedData = sortedData.reduce((acc, obj) => {
+                let key = getKey(obj.fields.hyperlinkAddress).toUpperCase();
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(obj);
+                return acc;
+            }, {});
+
+            let displaylinkdiv = document.querySelector('#displaylinkdiv');
+            let htmlContent = "";
+            const sortedKeys = Object.keys(groupedData).sort(customLocaleCompare);
+
+            sortedKeys.forEach(key => {
+                htmlContent += `<h5 id='${key}' style='color:#0d6efd; margin-top:30px; border-bottom: 2px solid #eee; padding-bottom:10px;'>${key}</h5>`;
+                htmlContent += "<div class='flex-container'>";
+                groupedData[key].forEach(item => {
+                    const isSelected = selectedIds.has(String(item.pk)) ? 'selected' : '';
+                    htmlContent += `
+                    <div class='edit-open-button'>
+                        <input type='button' 
+                               class="${isSelected}" 
+                               value="${item.fields.hyperlinkDescription}" 
+                               title="${item.fields.hyperlinkAddress}"
+                               data-href="${item.fields.hyperlinkAddress}" 
+                               data-pk="${item.pk}">
+                    </div>`;
+                });
+                htmlContent += "</div>";
+            });
+
+            displaylinkdiv.innerHTML = htmlContent;
+            bindEvents();
+            updateBatchActionBar();
+        }
+
+        let clickTimer = null;
+        let currentEditId = null;
+
+        function bindEvents() {
+            const buttons = document.querySelectorAll('.edit-open-button input');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', (event) => {
+                    if (isSelectMode) {
+                        const pk = event.target.dataset.pk;
+                        if (selectedIds.has(pk)) {
+                            selectedIds.delete(pk);
+                            event.target.classList.remove('selected');
+                        } else {
+                            selectedIds.add(pk);
+                            event.target.classList.add('selected');
+                        }
+                        updateBatchActionBar();
+                    } else {
+                        clearTimeout(clickTimer);
+                        clickTimer = setTimeout(function () {
+                            const href = event.target.dataset.href;
+                            let finalUrl = href.startsWith('http') ? href : 'https://' + href;
+                            window.open(finalUrl, '_blank');
+                        }, 250);
+                    }
+                });
+
+                btn.addEventListener('dblclick', (event) => {
+                    if (isSelectMode) return;
+                    clearTimeout(clickTimer);
+                    currentEditId = event.target.dataset.pk;
+                    const href = event.target.dataset.href;
+                    const desc = event.target.value;
+                    document.getElementById('edit-hyperlinkAddress-input').value = href;
+                    document.getElementById('edit-hyperlinkDescription-input').value = desc;
+                    new bootstrap.Modal(document.getElementById('edit-modal')).show();
+                });
+            });
+        }
+
+        function toggleSelectMode() {
+            isSelectMode = !isSelectMode;
+            const settingsBtn = document.getElementById('settingsDropdown');
+            
+            if (isSelectMode) {
+                settingsBtn.classList.remove('btn-outline-light');
+                settingsBtn.classList.add('btn-primary'); // 开启时变蓝
+            } else {
+                settingsBtn.classList.add('btn-outline-light');
+                settingsBtn.classList.remove('btn-primary');
+                selectedIds.clear();
+                renderLinks();
+            }
+            updateBatchActionBar();
+        }
+
+        function updateBatchActionBar() {
+            const bar = document.getElementById('batchActionBar');
+            const countSpan = document.getElementById('selectedCount');
+            
+            // 只要在选择模式下，即使没选中也显示操作栏，方便点击 Cancel 退出
+            if (isSelectMode) {
+                bar.style.display = 'flex';
+                bar.classList.add('slide-up');
+                countSpan.textContent = `${selectedIds.size} Selected`;
+            } else {
+                bar.style.display = 'none';
+                bar.classList.remove('slide-up');
+            }
+        }
+
+        function deleteSelected() {
+            if (selectedIds.size === 0) return alert("No items selected!");
+            
+            if (confirm(`Are you sure you want to delete ${selectedIds.size} items?`)) {
+                parsedData = parsedData.filter(item => !selectedIds.has(String(item.pk)));
+                saveData();
+                toggleSelectMode(); // 退出选择模式
+                alert("Deleted successfully!");
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('myHyperlinks', JSON.stringify(parsedData));
+            renderLinks();
+        }
+
+        document.getElementById('addHyperlinkForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const address = document.getElementById('hyperlink_address').value;
+            const description = document.getElementById('hyperlink_description').value;
+            parsedData.push({
+                pk: Date.now(),
+                fields: { hyperlinkAddress: address, hyperlinkDescription: description }
+            });
+            saveData();
+            document.getElementById('addHyperlinkForm').reset();
+            bootstrap.Modal.getInstance(document.getElementById('addHyperlinkModal')).hide();
+        });
+
+        document.getElementById('edit-save').addEventListener('click', () => {
+            const index = parsedData.findIndex(item => item.pk == currentEditId);
+            if (index !== -1) {
+                parsedData[index].fields.hyperlinkAddress = document.getElementById('edit-hyperlinkAddress-input').value;
+                parsedData[index].fields.hyperlinkDescription = document.getElementById('edit-hyperlinkDescription-input').value;
+                saveData();
+                closemodal();
+            }
+        });
+
+        document.getElementById('delete-save').addEventListener('click', () => {
+            parsedData = parsedData.filter(item => item.pk != currentEditId);
+            saveData();
+            closemodal();
+        });
+
+        const searchInput = document.getElementById('searchlink');
+        const suggestionsList = document.getElementById('suggestions');
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            if (term.length === 0) { suggestionsList.style.display = 'none'; return; }
+            const matches = parsedData.filter(i => i.fields.hyperlinkDescription.toLowerCase().includes(term));
+            suggestionsList.innerHTML = '';
+            if (matches.length > 0) {
+                suggestionsList.style.display = 'block';
+                matches.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = "list-group-item list-group-item-action";
+                    li.textContent = item.fields.hyperlinkDescription;
+                    li.onclick = () => window.open(item.fields.hyperlinkAddress, '_blank');
+                    suggestionsList.appendChild(li);
+                });
+            } else { suggestionsList.style.display = 'none'; }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !suggestionsList.contains(e.target)) suggestionsList.style.display = 'none';
+        });
+
+        function closemodal() {
+            const el = document.getElementById('edit-modal');
+            const modal = bootstrap.Modal.getInstance(el);
+            if (modal) modal.hide();
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(parsedData));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "shebangcob_backup.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        document.getElementById('importFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (Array.isArray(importedData)) {
+                        if (confirm("Overwrite bookmarks? \n(确认覆盖当前书签吗？)")) {
+                            parsedData = importedData;
+                            saveData();
+                            alert("Done!");
+                        }
+                    } else { alert("Invalid file!"); }
+                } catch (err) { alert("Error!"); }
+                document.getElementById('importFile').value = '';
+            };
+            reader.readAsText(file);
+        });
+
+        renderLinks();
+    </script>
+</body>
+</html>
