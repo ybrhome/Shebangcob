@@ -25,5 +25,5 @@ It features a smart sorting algorithm that automatically categorizes URLs by the
 * **Icons/Fonts:** Google Fonts (Playfair Display)
 
 #### **🚀 How to Use**
-Simply open the `Shebangcob.html` file in any modern web browser. No installation, build process, or server setup is required.
+Simply open the `index.html` file in any modern web browser. No installation, build process, or server setup is required.
 
