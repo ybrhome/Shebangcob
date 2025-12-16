@@ -37,8 +37,8 @@ Simply open the `index.html` file in any modern web browser. No installation, bu
 
 <br>
 <div align="center">
-    <img src="./images/alipay.JPG" width="200px" alt="Alipay">
-    
-    <sub>(感谢您的支持！)</sub>
+  <img src="./images/alipay.JPG" width="200px" alt="Alipay"> 
+   <br>
+  <sub>(感谢您的支持！)</sub>
 </div>
 </details>
